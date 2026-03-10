@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CaterBot – Telegram Bot Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --tg-bg: #17212b;
+    --tg-sidebar: #0f1923;
+    --tg-bubble-in: #182533;
+    --tg-bubble-out: #2b5278;
+    --tg-accent: #5288c1;
+    --tg-text: #f0f0f0;
+    --tg-muted: #7d8c98;
+    --tg-border: #1e2d3d;
+    --tg-input: #1c2b3a;
+    --tg-green: #4dcd5e;
+    --tg-red: #e05c5c;
+    --tg-gold: #f0b93a;
+    --font: 'Sora', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: #0d1117;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .demo-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .demo-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--tg-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .demo-label::before, .demo-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--tg-border);
+    max-width: 60px;
+  }
+
+  .phone {
+    width: 100%;
+    max-width: 420px;
+    background: var(--tg-bg);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    height: 720px;
+    position: relative;
+  }
+
+  /* Header */
+  .chat-header {
+    background: var(--tg-sidebar);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--tg-border);
+    flex-shrink: 0;
+  }
+
+  .back-btn {
+    color: var(--tg-accent);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .bot-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f0b93a, #e05c5c);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .bot-info { flex: 1 }
+  .bot-name { font-weight: 600; font-size: 15px; color: var(--tg-text); }
+  .bot-status { font-size: 12px; color: var(--tg-green); }
+
+  .header-icons { display: flex; gap: 16px; color: var(--tg-accent); font-size: 18px; }
+
+  /* Messages area */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    scroll-behavior: smooth;
+  }
+
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--tg-border); border-radius: 2px; }
+
+  .date-divider {
+    text-align: center;
+    margin: 8px 0;
+  }
+
+  .date-divider span {
+    font-size: 11px;
+    color: var(--tg-muted);
+    background: rgba(255,255,255,0.05);
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-family: var(--mono);
+  }
+
+  /* Bubbles */
+  .msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+    animation: fadeUp 0.25s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.bot { align-self: flex-start; }
+  .msg.user { align-self: flex-end; }
+
+  .bubble {
+    padding: 10px 13px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--tg-text);
+    position: relative;
+    word-break: break-word;
+  }
+
+  .msg.bot .bubble {
+    background: var(--tg-bubble-in);
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg.user .bubble {
+    background: var(--tg-bubble-out);
+    border-bottom-right-radius: 4px;
+  }
+
+  .bubble-time {
+    font-size: 10px;
+    color: var(--tg-muted);
+    margin-top: 3px;
+    font-family: var(--mono);
+  }
+
+  .msg.user .bubble-time { text-align: right; }
+
+  /* Inline keyboard */
+  .keyboard {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 6px;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .kb-row { display: flex; gap: 5px; }
+
+  .kb-btn {
+    flex: 1;
+    background: var(--tg-bubble-in);
+    border: 1px solid var(--tg-accent);
+    color: var(--tg-accent);
+    border-radius: 8px;
+    padding: 9px 8px;
+    font-size: 13px;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  .kb-btn:hover {
+    background: var(--tg-accent);
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  .kb-btn:active { transform: translateY(0); }
+
+  /* Menu card */
+  .menu-card {
+    background: var(--tg-bubble-in);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-top: 4px;
+    border: 1px solid var(--tg-border);
+    max-width: 300px;
+  }
+
+  .menu-card-img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    background: linear-gradient(135deg, #1e3a5f, #2b5278);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+  }
+
+  .menu-card-body { padding: 12px; }
+
+  .menu-card-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--tg-text);
+    margin-bottom: 4px;
+  }
+
+  .menu-card-desc {
+    font-size: 12px;
+    color: var(--tg-muted);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .menu-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .menu-card-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--tg-gold);
+    font-family: var(--mono);
+  }
+
+  .menu-card-min {
+    font-size: 11px;
+    color: var(--tg-muted);
+  }
+
+  .buy-btn {
+    background: var(--tg-accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-family: var(--font);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .buy-btn:hover { background: #6299cc; transform: translateY(-1px); }
+
+  /* Order summary */
+  .order-summary {
+    background: var(--tg-bubble-in);
+    border: 1px solid var(--tg-border);
+    border-radius: 14px;
+    padding: 14px;
+    max-width: 300px;
+    margin-top: 4px;
+  }
+
+  .order-summary h4 {
+    font-size: 13px;
+    color: var(--tg-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--mono);
+    margin-bottom: 10px;
+  }
+
+  .order-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--tg-text);
+    padding: 5px 0;
+    border-bottom: 1px solid var(--tg-border);
+  }
+
+  .order-row:last-child { border-bottom: none; }
+  .order-row.total { font-weight: 700; color: var(--tg-gold); font-size: 15px; margin-top: 4px; }
+
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+
+  .badge-confirmed { background: rgba(77,205,94,0.15); color: var(--tg-green); }
+  .badge-pending { background: rgba(240,185,58,0.15); color: var(--tg-gold); }
+
+  /* Typing indicator */
+  .typing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 14px;
+    background: var(--tg-bubble-in);
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    width: fit-content;
+    animation: fadeUp 0.2s ease forwards;
+  }
+
+  .typing span {
+    width: 6px;
+    height: 6px;
+    background: var(--tg-muted);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+  }
+
+  /* Input area */
+  .input-area {
+    background: var(--tg-sidebar);
+    border-top: 1px solid var(--tg-border);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .input-box {
+    flex: 1;
+    background: var(--tg-input);
+    border: 1px solid var(--tg-border);
+    border-radius: 22px;
+    padding: 10px 16px;
+    color: var(--tg-text);
+    font-family: var(--font);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input-box:focus { border-color: var(--tg-accent); }
+  .input-box::placeholder { color: var(--tg-muted); }
+
+  .send-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--tg-accent);
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .send-btn:hover { background: #6299cc; transform: scale(1.05); }
+
+  /* Quick reply chips */
+  .quick-replies {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 8px 12px 0;
+    flex-shrink: 0;
+  }
+
+  .qr-chip {
+    background: var(--tg-input);
+    border: 1px solid var(--tg-accent);
+    color: var(--tg-accent);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .qr-chip:hover { background: var(--tg-accent); color: white; }
+
+  /* Scenario selector */
+  .scenario-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 420px;
+  }
+
+  .scenario-btn {
+    background: rgba(82,136,193,0.1);
+    border: 1px solid rgba(82,136,193,0.3);
+    color: var(--tg-accent);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .scenario-btn:hover, .scenario-btn.active {
+    background: var(--tg-accent);
+    color: white;
+    border-color: var(--tg-accent);
+  }
+
+  .italic { font-style: italic; color: var(--tg-muted); font-size: 13px; }
+  .bold { font-weight: 600; }
+  .highlight { color: var(--tg-gold); font-weight: 600; }
+  b { font-weight: 600; }
+  .text-green { color: var(--tg-green); }
+  .text-muted { color: var(--tg-muted); font-size: 12px; }
+
+  /* ── Quantity Picker ── */
+  .qty-widget {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 14px 0 8px;
+    background: var(--tg-sidebar);
+    border: 1px solid var(--tg-border);
+    border-radius: 14px;
+    overflow: hidden;
+    width: fit-content;
+  }
+
+  .qty-btn {
+    width: 44px; height: 44px;
+    background: var(--tg-bubble-in);
+    border: none;
+    color: var(--tg-accent);
+    font-size: 22px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 300;
+  }
+
+  .qty-btn:hover { background: var(--tg-accent); color: white; }
+  .qty-btn:active { transform: scale(0.95); }
+
+  .qty-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 18px;
+    min-width: 80px;
+  }
+
+  .qty-num {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--tg-text);
+    font-family: var(--mono);
+    line-height: 1;
+  }
+
+  .qty-unit {
+    font-size: 10px;
+    color: var(--tg-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .qty-subtotal {
+    font-size: 13px;
+    color: var(--tg-muted);
+    margin-bottom: 10px;
+  }
+
+  .qty-subtotal b { color: var(--tg-gold); }
+
+  .qty-presets {
+    margin-bottom: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .preset-btn {
+    background: var(--tg-input);
+    border: 1px solid var(--tg-border);
+    color: var(--tg-muted);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .preset-btn:hover {
+    border-color: var(--tg-accent);
+    color: var(--tg-accent);
+  }
+
+  .add-to-cart-btn {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: none;
+    background: var(--tg-accent);
+    color: white;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .add-to-cart-btn:hover { background: #6299cc; }
+
+  .cancel-qty-btn {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--tg-border);
+    background: transparent;
+    color: var(--tg-muted);
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .cancel-qty-btn:hover { border-color: var(--tg-muted); color: var(--tg-text); }
+
+  /* ── Payment Modal ── */
+  .pay-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    animation: overlayIn 0.2s ease;
+  }
+  @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .pay-sheet {
+    background: #0f1923;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    padding: 0 0 24px;
+    animation: sheetUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    border-top: 1px solid var(--tg-border);
+  }
+  @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  .pay-handle {
+    width: 36px; height: 4px;
+    background: var(--tg-border);
+    border-radius: 2px;
+    margin: 12px auto 0;
+  }
+
+  .pay-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--tg-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .pay-title { font-size: 16px; font-weight: 700; color: var(--tg-text); }
+  .pay-amount { font-size: 20px; font-weight: 700; color: var(--tg-gold); font-family: var(--mono); }
+
+  .pay-close {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--tg-bubble-in);
+    border: none; color: var(--tg-muted);
+    font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .pay-tabs {
+    display: flex;
+    margin: 14px 16px 0;
+    background: var(--tg-bubble-in);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 3px;
+  }
+
+  .pay-tab {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--tg-muted);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .pay-tab.active {
+    background: var(--tg-accent);
+    color: white;
+  }
+
+  .pay-body { padding: 16px; }
+
+  .pay-panel { display: none; flex-direction: column; gap: 12px; }
+  .pay-panel.active { display: flex; }
+
+  .pay-field label {
+    display: block;
+    font-size: 11px;
+    color: var(--tg-muted);
+    font-family: var(--mono);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .pay-input {
+    width: 100%;
+    background: var(--tg-bubble-in);
+    border: 1px solid var(--tg-border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: var(--tg-text);
+    font-family: var(--font);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .pay-input:focus { border-color: var(--tg-accent); }
+  .pay-input::placeholder { color: var(--tg-muted); }
+
+  .pay-row { display: flex; gap: 10px; }
+  .pay-row .pay-field { flex: 1; }
+
+  .momo-options {
+    display: flex;
+    gap: 8px;
+  }
+
+  .momo-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border-radius: 10px;
+    border: 2px solid var(--tg-border);
+    background: var(--tg-bubble-in);
+    color: var(--tg-text);
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .momo-btn:hover { border-color: var(--tg-accent); }
+  .momo-btn.selected { border-color: var(--tg-accent); background: rgba(82,136,193,0.15); color: var(--tg-accent); }
+
+  .momo-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+
+  .pay-note {
+    font-size: 11px;
+    color: var(--tg-muted);
+    background: rgba(240,185,58,0.08);
+    border: 1px solid rgba(240,185,58,0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    line-height: 1.5;
+  }
+
+  .pay-submit {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    background: var(--tg-accent);
+    color: white;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .pay-submit:hover { background: #6299cc; transform: translateY(-1px); }
+  .pay-submit:active { transform: translateY(0); }
+
+  .pay-secure {
+    text-align: center;
+    font-size: 11px;
+    color: var(--tg-muted);
+    margin-top: 10px;
+    font-family: var(--mono);
+  }
+
+  /* Processing spinner */
+  .pay-processing {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    gap: 16px;
+  }
+
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--tg-border);
+    border-top-color: var(--tg-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .processing-text { color: var(--tg-text); font-size: 15px; font-weight: 500; }
+  .processing-sub { color: var(--tg-muted); font-size: 12px; font-family: var(--mono); }
+
+  /* Success state */
+  .pay-success {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 20px;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .success-icon {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: rgba(77,205,94,0.15);
+    border: 2px solid var(--tg-green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+  .success-title { font-size: 18px; font-weight: 700; color: var(--tg-green); }
+  .success-sub { font-size: 13px; color: var(--tg-muted); line-height: 1.5; }
+
+  .success-close {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: var(--tg-green);
+    color: white;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-wrapper">
+  <div class="demo-label">Interactive Prototype · CaterBot</div>
+
+  <div class="phone">
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="back-btn">‹</div>
+      <div class="bot-avatar">🍽️</div>
+      <div class="bot-info">
+        <div class="bot-name">CaterBot</div>
+        <div class="bot-status">● online</div>
+      </div>
+      <div class="header-icons">
+        <span>📞</span>
+        <span>⋮</span>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages" id="messages">
+      <div class="date-divider"><span>TODAY</span></div>
+    </div>
+
+    <!-- Quick replies -->
+    <div class="quick-replies" id="quickReplies"></div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <input class="input-box" id="inputBox" placeholder="Type a message..." />
+      <button class="send-btn" onclick="sendUserMsg()">➤</button>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="pay-overlay" id="payOverlay" style="display:none;">
+      <div class="pay-sheet">
+        <div class="pay-handle"></div>
+
+        <!-- Header -->
+        <div class="pay-header">
+          <div>
+            <div class="pay-title">Complete Payment</div>
+            <div class="pay-amount" id="payAmountLabel">GHS 870.00</div>
+          </div>
+          <button class="pay-close" onclick="closePayModal()">✕</button>
+        </div>
+
+        <!-- Main form area -->
+        <div id="payFormArea">
+          <!-- Tabs -->
+          <div class="pay-tabs">
+            <button class="pay-tab active" onclick="switchPayTab('card', this)">💳 Card</button>
+            <button class="pay-tab" onclick="switchPayTab('momo', this)">📱 Mobile Money</button>
+          </div>
+
+          <div class="pay-body">
+
+            <!-- Card Panel -->
+            <div class="pay-panel active" id="panel-card">
+              <div class="pay-field">
+                <label>Card Number</label>
+                <input class="pay-input" placeholder="4242 4242 4242 4242" maxlength="19" oninput="formatCard(this)" />
+              </div>
+              <div class="pay-field">
+                <label>Cardholder Name</label>
+                <input class="pay-input" placeholder="Ama Owusu" />
+              </div>
+              <div class="pay-row">
+                <div class="pay-field">
+                  <label>Expiry</label>
+                  <input class="pay-input" placeholder="MM / YY" maxlength="7" oninput="formatExpiry(this)" />
+                </div>
+                <div class="pay-field">
+                  <label>CVV</label>
+                  <input class="pay-input" placeholder="123" maxlength="3" type="password" />
+                </div>
+              </div>
+              <div class="pay-note">🔒 Your card details are encrypted and never stored.</div>
+              <button class="pay-submit" onclick="processPayment('card')">
+                <span>💳</span> Pay <span id="cardPayLabel">GHS 870</span>
+              </button>
+            </div>
+
+            <!-- Mobile Money Panel -->
+            <div class="pay-panel" id="panel-momo">
+              <div class="pay-field">
+                <label>Select Network</label>
+                <div class="momo-options">
+                  <button class="momo-btn selected" onclick="selectMomo(this)">
+                    <span class="momo-icon">🟡</span>MTN MoMo
+                  </button>
+                  <button class="momo-btn" onclick="selectMomo(this)">
+                    <span class="momo-icon">🔴</span>Vodafone Cash
+                  </button>
+                  <button class="momo-btn" onclick="selectMomo(this)">
+                    <span class="momo-icon">🔵</span>AirtelTigo
+                  </button>
+                </div>
+              </div>
+              <div class="pay-field">
+                <label>Mobile Number</label>
+                <input class="pay-input" placeholder="024 123 4567" maxlength="12" oninput="formatPhone(this)" />
+              </div>
+              <div class="pay-field">
+                <label>Account Name</label>
+                <input class="pay-input" placeholder="Ama Owusu" />
+              </div>
+              <div class="pay-note">📲 You will receive a prompt on your phone to approve the payment. Keep your phone nearby.</div>
+              <button class="pay-submit" onclick="processPayment('momo')">
+                <span>📱</span> Send Prompt · <span id="momoPayLabel">GHS 870</span>
+              </button>
+            </div>
+
+          </div>
+          <div class="pay-secure">🔐 Secured by Paystack · SSL Encrypted</div>
+        </div>
+
+        <!-- Processing state -->
+        <div class="pay-processing" id="payProcessing">
+          <div class="spinner"></div>
+          <div class="processing-text" id="processingText">Processing payment...</div>
+          <div class="processing-sub" id="processingSub">Please wait</div>
+        </div>
+
+        <!-- Success state -->
+        <div class="pay-success" id="paySuccess">
+          <div class="success-icon">✓</div>
+          <div class="success-title">Payment Successful!</div>
+          <div class="success-sub" id="successMsg">Your deposit of GHS 870 has been received.<br>Your booking is now confirmed!</div>
+          <button class="success-close" onclick="closePaySuccess()">View Order Confirmation →</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario selector -->
+  <div class="scenario-bar">
+    <button class="scenario-btn active" onclick="loadScenario('welcome', this)">🏠 Welcome</button>
+    <button class="scenario-btn" onclick="loadScenario('menu', this)">🍽️ Browse Menu</button>
+    <button class="scenario-btn" onclick="loadScenario('order', this)">📦 Place Order</button>
+    <button class="scenario-btn" onclick="loadScenario('payment', this)">💳 Payment</button>
+    <button class="scenario-btn" onclick="loadScenario('confirm', this)">✅ Confirmation</button>
+    <button class="scenario-btn" onclick="loadScenario('status', this)">🚚 Order Status</button>
+  </div>
+</div>
+
+<script>
+  const msgs = document.getElementById('messages');
+  const input = document.getElementById('inputBox');
+  const qrDiv = document.getElementById('quickReplies');
+  let msgTime = 0;
+
+  function getTime() {
+    const now = new Date();
+    return now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  }
+
+  function scrollDown() {
+    setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 50);
+  }
+
+  function clearMessages() {
+    msgs.innerHTML = '<div class="date-divider"><span>TODAY</span></div>';
+    qrDiv.innerHTML = '';
+    msgTime = 0;
+  }
+
+  function addBotMsg(content, delay = 0) {
+    return new Promise(resolve => {
+      // Show typing
+      setTimeout(() => {
+        const typing = document.createElement('div');
+        typing.className = 'msg bot';
+        typing.innerHTML = `<div class="typing"><span></span><span></span><span></span></div>`;
+        msgs.appendChild(typing);
+        scrollDown();
+
+        setTimeout(() => {
+          msgs.removeChild(typing);
+          const msg = document.createElement('div');
+          msg.className = 'msg bot';
+          msg.style.animationDelay = '0ms';
+          msg.innerHTML = `<div class="bubble">${content}</div><div class="bubble-time">${getTime()}</div>`;
+          msgs.appendChild(msg);
+          scrollDown();
+          resolve();
+        }, 700);
+      }, delay);
+    });
+  }
+
+  function addUserMsg(text) {
+    const msg = document.createElement('div');
+    msg.className = 'msg user';
+    msg.innerHTML = `<div class="bubble">${text}</div><div class="bubble-time">${getTime()} ✓✓</div>`;
+    msgs.appendChild(msg);
+    scrollDown();
+  }
+
+  function addKeyboard(buttons, delay = 0) {
+    setTimeout(() => {
+      const kb = document.createElement('div');
+      kb.className = 'keyboard';
+      kb.id = 'kb-' + Date.now();
+      buttons.forEach(row => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'kb-row';
+        row.forEach(btn => {
+          const b = document.createElement('button');
+          b.className = 'kb-btn';
+          b.textContent = btn.label;
+          b.onclick = () => {
+            document.querySelectorAll('.keyboard').forEach(k => k.remove());
+            qrDiv.innerHTML = '';
+            addUserMsg(btn.label);
+            if (btn.action) btn.action();
+          };
+          rowEl.appendChild(b);
+        });
+        kb.appendChild(rowEl);
+      });
+      // Attach to last bot message
+      const lastBubble = msgs.querySelector('.msg.bot:last-of-type .bubble');
+      if (lastBubble) lastBubble.appendChild(kb);
+      scrollDown();
+    }, delay);
+  }
+
+  function setQuickReplies(chips) {
+    qrDiv.innerHTML = '';
+    chips.forEach(chip => {
+      const el = document.createElement('div');
+      el.className = 'qr-chip';
+      el.textContent = chip.label;
+      el.onclick = () => {
+        qrDiv.innerHTML = '';
+        addUserMsg(chip.label);
+        if (chip.action) chip.action();
+      };
+      qrDiv.appendChild(el);
+    });
+  }
+
+  // ─── SCENARIOS ─────────────────────────────────────────────────────────────
+
+  const scenarios = {
+
+    welcome: async () => {
+      await addBotMsg(`👋 <b>Welcome to GoldFork Catering!</b><br><br>We cater for:<br>🎊 Weddings & Parties<br>🏢 Corporate Events<br>🎂 Private Celebrations<br><br>What would you like to do today?`);
+      addKeyboard([
+        [{ label: '🍽️ View Menu', action: () => setTimeout(() => scenarios.menu(), 300) },
+         { label: '📦 Place Order', action: () => setTimeout(() => scenarios.order(), 300) }],
+        [{ label: '📍 Pickup Info', action: pickupInfo },
+         { label: '📞 Contact Us', action: contactUs }]
+      ], 800);
+    },
+
+    menu: async () => {
+      await addBotMsg(`🍽️ <b>Our Menu</b><br><span class="text-muted">Tap any item to add to your order</span>`);
+
+      const items = [
+        { emoji: '🍛', name: 'Jollof Rice', cat: 'Rice Dishes', price: 'GHS 15', min: 'Min. 30 portions', desc: 'Party-style smoky jollof rice' },
+        { emoji: '🍗', name: 'Grilled Chicken', cat: 'Proteins', price: 'GHS 25', min: 'Min. 20 pieces', desc: 'Marinated & chargrilled to perfection' },
+        { emoji: '🥗', name: 'Small Chops', cat: 'Appetizers', price: 'GHS 80', min: 'Per 50 pcs', desc: 'Puff puff, spring rolls, samosas' },
+        { emoji: '🎂', name: 'Event Cake', cat: 'Desserts', price: 'GHS 350', min: 'Min. 1 cake', desc: 'Custom designed for your event' },
+      ];
+
+      for (let i = 0; i < items.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, i * 400));
+        const item = items[i];
+        const msg = document.createElement('div');
+        msg.className = 'msg bot';
+        msg.style.animationDelay = '0ms';
+        msg.innerHTML = `
+          <div class="menu-card">
+            <div class="menu-card-img">${item.emoji}</div>
+            <div class="menu-card-body">
+              <div class="menu-card-name">${item.name}</div>
+              <div class="menu-card-desc">${item.desc}</div>
+              <div class="menu-card-footer">
+                <div>
+                  <div class="menu-card-price">${item.price}</div>
+                  <div class="menu-card-min">${item.min}</div>
+                </div>
+                <button class="buy-btn" onclick="selectItem('${item.name}', '${item.price}')">Select →</button>
+              </div>
+            </div>
+          </div>
+          <div class="bubble-time">${getTime()}</div>`;
+        msgs.appendChild(msg);
+        scrollDown();
+      }
+
+      setTimeout(() => {
+        setQuickReplies([
+          { label: '📦 Place Order', action: () => setTimeout(() => scenarios.order(), 300) },
+          { label: '🏠 Main Menu', action: () => setTimeout(() => scenarios.welcome(), 300) }
+        ]);
+      }, items.length * 400 + 200);
+    },
+
+    order: async () => {
+      await addBotMsg(`📦 <b>Place Your Order</b><br><br>How would you like to receive your order?`);
+      addKeyboard([
+        [{ label: '🚚 Delivery', action: deliveryFlow },
+         { label: '🏃 Pickup', action: pickupFlow }],
+        [{ label: '🍽️ Dine-in / Event Setup', action: dineinFlow }]
+      ], 800);
+    },
+
+    confirm: async () => {
+      await addBotMsg(`✅ <b>Booking Confirmed!</b>`);
+      await new Promise(r => setTimeout(r, 300));
+
+      const msg = document.createElement('div');
+      msg.className = 'msg bot';
+      msg.innerHTML = `
+        <div class="order-summary">
+          <h4>Order Receipt</h4>
+          <div class="order-row"><span>Order ID</span><span class="highlight">ORD-20240115</span></div>
+          <div class="order-row"><span>Jollof Rice × 50</span><span>GHS 750</span></div>
+          <div class="order-row"><span>Grilled Chicken × 30</span><span>GHS 750</span></div>
+          <div class="order-row"><span>Small Chops × 2</span><span>GHS 160</span></div>
+          <div class="order-row"><span>Delivery Fee</span><span>GHS 80</span></div>
+          <div class="order-row total"><span>TOTAL</span><span>GHS 1,740</span></div>
+          <div class="order-row"><span>Deposit Paid (50%)</span><span class="text-green">GHS 870 ✓</span></div>
+          <div class="order-row"><span>Balance Due</span><span>GHS 870</span></div>
+          <div class="order-row"><span>Event Date</span><span>Feb 14, 2025</span></div>
+          <div class="order-row"><span>Status</span><span><span class="status-badge badge-confirmed">CONFIRMED</span></span></div>
+        </div>
+        <div class="bubble-time">${getTime()}</div>`;
+      msgs.appendChild(msg);
+      scrollDown();
+
+      setTimeout(async () => {
+        await addBotMsg(`🎉 Thank you! We'll contact you on <b>0241234567</b> to finalise details.<br><br>Balance of <span class="highlight">GHS 870</span> is due <b>48hrs before your event</b>.`);
+        setQuickReplies([
+          { label: '📦 My Orders', action: myOrders },
+          { label: '🏠 Main Menu', action: () => setTimeout(() => scenarios.welcome(), 300) }
+        ]);
+      }, 500);
+    },
+
+    status: async () => {      await addBotMsg(`📦 <b>Order Tracker</b><br><span class="text-muted">ORD-20240115 · Feb 14, 2025</span>`);
+
+      setTimeout(() => {
+        const steps = [
+          { icon: '✅', label: 'Order Confirmed', done: true },
+          { icon: '👨‍🍳', label: 'Kitchen Preparing', done: true },
+          { icon: '📦', label: 'Packed & Ready', done: true },
+          { icon: '🚚', label: 'Out for Delivery', done: false },
+          { icon: '🏠', label: 'Delivered', done: false },
+        ];
+
+        const stepsHTML = steps.map(s =>
+          `<div class="order-row">
+            <span>${s.icon} ${s.label}</span>
+            <span>${s.done ? '<span class="text-green">✓</span>' : '<span class="text-muted">–</span>'}</span>
+          </div>`
+        ).join('');
+
+        const msg = document.createElement('div');
+        msg.className = 'msg bot';
+        msg.innerHTML = `
+          <div class="order-summary">
+            <h4>Live Status</h4>
+            ${stepsHTML}
+          </div>
+          <div class="bubble-time">${getTime()}</div>`;
+        msgs.appendChild(msg);
+        scrollDown();
+
+        setTimeout(async () => {
+          await addBotMsg(`🚚 Your order is <b>out for delivery!</b><br><br>ETA: <span class="highlight">45 minutes</span><br>Driver: Kwame · 0501234567`);
+          setQuickReplies([
+            { label: '🏠 Main Menu', action: () => setTimeout(() => scenarios.welcome(), 300) }
+          ]);
+        }, 400);
+      }, 800);
+    },
+
+    payment: async () => {
+      cart = [];
+      orderMeta = { type: 'Delivery', fee: 'GHS 80', date: 'Feb 14' };
+      await addBotMsg(`💳 <b>Payment Demo</b><br><span class="text-muted">Let's build your order first, then go to payment</span>`);
+      setTimeout(() => showItemPicker(), 600);
+    }
+  };
+
+  // ─── FLOWS ──────────────────────────────────────────────────────────────────
+
+  async function deliveryFlow() {
+    await addBotMsg(`🚚 <b>Delivery Order</b><br><br>We deliver to these zones:<br><br>📍 <b>Zone 1</b> · East Legon, Airport, Adenta — <span class="highlight">GHS 50</span><br>📍 <b>Zone 2</b> · Tema, Lashibi, Ashaiman — <span class="highlight">GHS 80</span><br>📍 <b>Zone 3</b> · Kasoa, Weija, Budumburam — <span class="highlight">GHS 120</span><br><br>Which zone are you in?`);
+    addKeyboard([
+      [{ label: 'Zone 1 – GHS 50', action: () => collectEventDate('Delivery', 'GHS 50') },
+       { label: 'Zone 2 – GHS 80', action: () => collectEventDate('Delivery', 'GHS 80') }],
+      [{ label: 'Zone 3 – GHS 120', action: () => collectEventDate('Delivery', 'GHS 120') }]
+    ], 800);
+  }
+
+  async function pickupFlow() {
+    await addBotMsg(`🏃 <b>Pickup Order</b><br><br>📍 <b>GoldFork Kitchen</b><br>14 Independence Ave, Accra<br><br>⏰ Pickup hours: Mon–Sat, 8am–6pm<br>📅 Minimum 48hrs advance notice required<br><br>Ready to proceed?`);
+    addKeyboard([
+      [{ label: '✅ Yes, proceed', action: () => collectEventDate('Pickup', 'Free') },
+       { label: '← Go back', action: () => setTimeout(() => scenarios.order(), 300) }]
+    ], 800);
+  }
+
+  async function dineinFlow() {
+    await addBotMsg(`🍽️ <b>Dine-in / Event Setup</b><br><br>We set up and serve at your venue.<br><br>📍 Service available within Accra<br>👥 Minimum 50 guests<br>⏰ Setup starts 2hrs before event<br><br>Shall we proceed?`);
+    addKeyboard([
+      [{ label: '✅ Yes, proceed', action: () => collectEventDate('Dine-in', 'GHS 200') },
+       { label: '← Go back', action: () => setTimeout(() => scenarios.order(), 300) }]
+    ], 800);
+  }
+
+  async function collectEventDate(type, fee) {
+    await addBotMsg(`📅 <b>Event Date</b><br><br>When is your event? Select a date:`);
+    addKeyboard([
+      [{ label: 'Feb 14 · Valentine\'s', action: () => collectItems(type, fee, 'Feb 14') },
+       { label: 'Feb 21 · Available', action: () => collectItems(type, fee, 'Feb 21') }],
+      [{ label: 'Mar 1 · Available', action: () => collectItems(type, fee, 'Mar 1') },
+       { label: '📅 Custom date', action: () => collectItems(type, fee, 'Custom') }]
+    ], 600);
+  }
+
+  // ─── CART STATE ──────────────────────────────────────────────────────────────
+
+  const MENU_ITEMS = [
+    { id: 1, emoji: '🍛', name: 'Jollof Rice',     unit: 'portions', price: 15,  min: 30  },
+    { id: 2, emoji: '🍗', name: 'Grilled Chicken', unit: 'pieces',   price: 25,  min: 20  },
+    { id: 3, emoji: '🥗', name: 'Small Chops',     unit: 'pcs',      price: 1.6, min: 50  },
+    { id: 4, emoji: '🎂', name: 'Event Cake',      unit: 'cake',     price: 350, min: 1   },
+    { id: 5, emoji: '🥤', name: 'Fruit Punch',     unit: 'litres',   price: 8,   min: 10  },
+    { id: 6, emoji: '🍲', name: 'Egusi Soup',      unit: 'portions', price: 18,  min: 20  },
+  ];
+
+  let cart = [];      // [{ item, qty }]
+  let orderMeta = {}; // { type, fee, date }
+
+  function cartTotal() {
+    return cart.reduce((sum, c) => sum + c.item.price * c.qty, 0);
+  }
+
+  function feeNum(feeStr) {
+    const n = parseFloat(feeStr.replace(/[^\d.]/g, ''));
+    return isNaN(n) ? 0 : n;
+  }
+
+  async function collectItems(type, fee, date) {
+    cart = [];
+    orderMeta = { type, fee, date };
+    await showItemPicker();
+  }
+
+  async function showItemPicker() {
+    const cartCount = cart.length;
+    const intro = cartCount === 0
+      ? `🍽️ <b>Build Your Order</b><br><br>📅 ${orderMeta.date} · ${orderMeta.type}<br><span class="text-muted">Select items to add to your order</span>`
+      : `🛒 <b>Keep Adding Items</b><br><span class="text-muted">Cart: ${cart.length} item(s) · GHS ${cartTotal().toFixed(2)}</span><br><br>Add more or proceed to review:`;
+
+    await addBotMsg(intro);
+
+    // Build item buttons
+    const rows = [];
+    for (let i = 0; i < MENU_ITEMS.length; i += 2) {
+      const row = [{ label: `${MENU_ITEMS[i].emoji} ${MENU_ITEMS[i].name}`, action: () => showQtyPicker(MENU_ITEMS[i]) }];
+      if (MENU_ITEMS[i+1]) row.push({ label: `${MENU_ITEMS[i+1].emoji} ${MENU_ITEMS[i+1].name}`, action: () => showQtyPicker(MENU_ITEMS[i+1]) });
+      rows.push(row);
+    }
+
+    if (cartCount > 0) {
+      rows.push([{ label: `✅ Review Order (${cart.length} items)`, action: showCartReview }]);
+    }
+    rows.push([{ label: '← Change Order Type', action: () => setTimeout(() => scenarios.order(), 300) }]);
+
+    addKeyboard(rows, 600);
+  }
+
+  async function showQtyPicker(item) {
+    // Show quantity picker inline as a bot message with stepper UI
+    const existingQty = cart.find(c => c.item.id === item.id)?.qty || item.min;
+
+    await addBotMsg(`
+      ${item.emoji} <b>${item.name}</b><br>
+      <span class="text-muted">GHS ${item.price} per ${item.unit} · Min. ${item.min} ${item.unit}</span><br><br>
+      How many ${item.unit} do you need?
+      <div class="qty-widget" id="qty-widget-${item.id}">
+        <button class="qty-btn" onclick="adjustQty(${item.id}, -${item.min})">−</button>
+        <div class="qty-display">
+          <span class="qty-num" id="qty-val-${item.id}">${existingQty}</span>
+          <span class="qty-unit">${item.unit}</span>
+        </div>
+        <button class="qty-btn" onclick="adjustQty(${item.id}, ${item.min})">+</button>
+      </div>
+      <div class="qty-subtotal" id="qty-sub-${item.id}">Subtotal: <b>GHS ${(item.price * existingQty).toFixed(2)}</b></div>
+      <div class="qty-presets">
+        <span class="text-muted" style="font-size:11px;">Quick select:</span><br>
+        ${[item.min, item.min*2, item.min*3, item.min*5].map(n =>
+          `<button class="preset-btn" onclick="setQty(${item.id}, ${n})">${n}</button>`
+        ).join('')}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="add-to-cart-btn" onclick="addToCart(${item.id})">🛒 Add to Order</button>
+        <button class="cancel-qty-btn" onclick="cancelQty()">Cancel</button>
+      </div>
+    `);
+
+    // Store current qty in a temp var
+    window._qtyState = window._qtyState || {};
+    window._qtyState[item.id] = { item, qty: existingQty };
+  }
+
+  function adjustQty(itemId, delta) {
+    const state = window._qtyState[itemId];
+    if (!state) return;
+    const item = state.item;
+    const newQty = Math.max(item.min, state.qty + delta);
+    state.qty = newQty;
+    const valEl = document.getElementById(`qty-val-${itemId}`);
+    const subEl = document.getElementById(`qty-sub-${itemId}`);
+    if (valEl) valEl.textContent = newQty;
+    if (subEl) subEl.innerHTML = `Subtotal: <b>GHS ${(item.price * newQty).toFixed(2)}</b>`;
+  }
+
+  function setQty(itemId, qty) {
+    const state = window._qtyState[itemId];
+    if (!state) return;
+    state.qty = qty;
+    const valEl = document.getElementById(`qty-val-${itemId}`);
+    const subEl = document.getElementById(`qty-sub-${itemId}`);
+    if (valEl) valEl.textContent = qty;
+    if (subEl) subEl.innerHTML = `Subtotal: <b>GHS ${(state.item.price * qty).toFixed(2)}</b>`;
+  }
+
+  function addToCart(itemId) {
+    const state = window._qtyState[itemId];
+    if (!state) return;
+    const existing = cart.findIndex(c => c.item.id === itemId);
+    if (existing >= 0) cart[existing].qty = state.qty;
+    else cart.push({ item: state.item, qty: state.qty });
+
+    addUserMsg(`🛒 Added ${state.qty} ${state.item.unit} of ${state.item.name}`);
+    setTimeout(() => showItemPicker(), 400);
+  }
+
+  function cancelQty() {
+    setTimeout(() => showItemPicker(), 200);
+  }
+
+  async function showCartReview() {
+    if (cart.length === 0) {
+      await addBotMsg(`Your cart is empty! Please add at least one item.`);
+      setTimeout(() => showItemPicker(), 500);
+      return;
+    }
+
+    const itemRows = cart.map(c =>
+      `<div class="order-row">
+        <span>${c.item.emoji} ${c.item.name} × ${c.qty} ${c.item.unit}</span>
+        <span>GHS ${(c.item.price * c.qty).toFixed(2)}</span>
+      </div>`
+    ).join('');
+
+    const subtotal = cartTotal();
+    const deliveryFee = feeNum(orderMeta.fee);
+    const total = subtotal + deliveryFee;
+    const deposit = total * 0.5;
+
+    const msg = document.createElement('div');
+    msg.className = 'msg bot';
+    msg.innerHTML = `
+      <div class="bubble">
+        🧾 <b>Order Review</b><br>
+        <span class="text-muted">📅 ${orderMeta.date} · ${orderMeta.type}</span>
+        <div class="order-summary" style="margin-top:10px;">
+          <h4>Your Items</h4>
+          ${itemRows}
+          <div class="order-row"><span>Subtotal</span><span>GHS ${subtotal.toFixed(2)}</span></div>
+          <div class="order-row"><span>Delivery Fee</span><span>GHS ${deliveryFee.toFixed(2)}</span></div>
+          <div class="order-row total"><span>TOTAL</span><span>GHS ${total.toFixed(2)}</span></div>
+        </div>
+        <div class="keyboard" style="margin-top:10px;">
+          <div class="kb-row">
+            <button class="kb-btn" onclick="document.querySelectorAll('.keyboard').forEach(k=>k.remove()); addUserMsg('💳 Pay 50% Deposit — GHS ${deposit.toFixed(2)}'); setTimeout(()=>openPayModal('GHS ${deposit.toFixed(2)}','${deposit.toFixed(2)}'),300)">💳 Pay 50% — GHS ${deposit.toFixed(2)}</button>
+          </div>
+          <div class="kb-row">
+            <button class="kb-btn" onclick="document.querySelectorAll('.keyboard').forEach(k=>k.remove()); addUserMsg('💳 Pay Full — GHS ${total.toFixed(2)}'); setTimeout(()=>openPayModal('GHS ${total.toFixed(2)}','${total.toFixed(2)}'),300)">💳 Pay Full — GHS ${total.toFixed(2)}</button>
+          </div>
+          <div class="kb-row">
+            <button class="kb-btn" onclick="document.querySelectorAll('.keyboard').forEach(k=>k.remove()); addUserMsg('✏️ Edit Order'); setTimeout(()=>showItemPicker(),300)">✏️ Edit Order</button>
+          </div>
+        </div>
+      </div>
+      <div class="bubble-time">${getTime()}</div>`;
+    msgs.appendChild(msg);
+    scrollDown();
+  }
+
+  async function buildOrder(type, fee, date) {
+    // Legacy fallback — goes straight to cart
+    cart = [];
+    orderMeta = { type, fee, date };
+    await showItemPicker();
+  }
+
+  // ─── PAYMENT MODAL ───────────────────────────────────────────────────────────
+
+  function openPayModal(label, amount) {
+    document.getElementById('payAmountLabel').textContent = label;
+    document.getElementById('cardPayLabel').textContent = label;
+    document.getElementById('momoPayLabel').textContent = label;
+    document.getElementById('successMsg').innerHTML =
+      `Your deposit of ${label} has been received.<br>Your booking is now confirmed!`;
+
+    // Reset state
+    document.getElementById('payFormArea').style.display = 'block';
+    document.getElementById('payProcessing').style.display = 'none';
+    document.getElementById('paySuccess').style.display = 'none';
+
+    // Reset tabs to card
+    document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.pay-tab').classList.add('active');
+    document.querySelectorAll('.pay-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-card').classList.add('active');
+
+    document.getElementById('payOverlay').style.display = 'flex';
+  }
+
+  function closePayModal() {
+    document.getElementById('payOverlay').style.display = 'none';
+  }
+
+  function switchPayTab(tab, btn) {
+    document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.pay-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+  }
+
+  function selectMomo(btn) {
+    document.querySelectorAll('.momo-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  function formatCard(input) {
+    let v = input.value.replace(/\D/g, '').substring(0, 16);
+    input.value = v.replace(/(.{4})/g, '$1 ').trim();
+  }
+
+  function formatExpiry(input) {
+    let v = input.value.replace(/\D/g, '').substring(0, 4);
+    if (v.length >= 2) v = v.slice(0, 2) + ' / ' + v.slice(2);
+    input.value = v;
+  }
+
+  function formatPhone(input) {
+    let v = input.value.replace(/\D/g, '').substring(0, 10);
+    if (v.length >= 4) v = v.slice(0, 3) + ' ' + v.slice(3);
+    if (v.length >= 8) v = v.slice(0, 7) + ' ' + v.slice(7);
+    input.value = v;
+  }
+
+  function processPayment(method) {
+    const formArea = document.getElementById('payFormArea');
+    const processing = document.getElementById('payProcessing');
+    const processingText = document.getElementById('processingText');
+    const processingSub = document.getElementById('processingSub');
+
+    formArea.style.display = 'none';
+    processing.style.display = 'flex';
+
+    if (method === 'momo') {
+      processingText.textContent = 'Sending MoMo prompt...';
+      processingSub.textContent = 'Check your phone and approve';
+      setTimeout(() => {
+        processingSub.textContent = 'Waiting for approval...';
+      }, 1500);
+    } else {
+      processingText.textContent = 'Processing payment...';
+      processingSub.textContent = 'Please wait';
+    }
+
+    // Simulate processing delay
+    setTimeout(() => {
+      processing.style.display = 'none';
+      document.getElementById('paySuccess').style.display = 'flex';
+    }, method === 'momo' ? 3000 : 2000);
+  }
+
+  function closePaySuccess() {
+    document.getElementById('payOverlay').style.display = 'none';
+    setTimeout(() => scenarios.confirm(), 400);
+  }
+
+  async function selectItem(name, price) {
+    addUserMsg(`I'd like to order ${name}`);
+    await addBotMsg(`Great choice! 👍<br><br><b>${name}</b> · ${price}<br><br>How many portions/pieces do you need?`);
+    addKeyboard([
+      [{ label: '30 pcs', action: () => setTimeout(() => scenarios.order(), 400) },
+       { label: '50 pcs', action: () => setTimeout(() => scenarios.order(), 400) },
+       { label: '100 pcs', action: () => setTimeout(() => scenarios.order(), 400) }]
+    ], 600);
+  }
+
+  async function pickupInfo() {
+    await addBotMsg(`📍 <b>Pickup Information</b><br><br><b>GoldFork Kitchen</b><br>14 Independence Ave, Accra<br>Near Accra Mall<br><br>⏰ Mon–Sat: 8am – 6pm<br>☎️ 0241234567<br><br>Order at least <b>48 hours</b> in advance.`);
+    setQuickReplies([
+      { label: '📦 Place Order', action: () => setTimeout(() => scenarios.order(), 300) },
+      { label: '🏠 Main Menu', action: () => setTimeout(() => scenarios.welcome(), 300) }
+    ]);
+  }
+
+  async function contactUs() {
+    await addBotMsg(`📞 <b>Contact Us</b><br><br>📱 WhatsApp: 0241234567<br>📧 hello@goldfork.com<br>🌐 www.goldfork.com<br><br>⏰ We reply within 1 hour during business hours.`);
+    setQuickReplies([
+      { label: '🏠 Main Menu', action: () => setTimeout(() => scenarios.welcome(), 300) }
+    ]);
+  }
+
+  async function myOrders() {
+    await addBotMsg(`📦 <b>Your Orders</b>`);
+    setTimeout(() => {
+      const msg = document.createElement('div');
+      msg.className = 'msg bot';
+      msg.innerHTML = `
+        <div class="order-summary">
+          <h4>Recent Orders</h4>
+          <div class="order-row"><span>ORD-20240115</span><span><span class="status-badge badge-confirmed">CONFIRMED</span></span></div>
+          <div class="order-row"><span>Feb 14 · Delivery</span><span class="highlight">GHS 1,740</span></div>
+          <div class="order-row"><span>ORD-20231228</span><span><span class="status-badge badge-pending">COMPLETED</span></span></div>
+          <div class="order-row"><span>Dec 28 · Pickup</span><span class="highlight">GHS 960</span></div>
+        </div>
+        <div class="bubble-time">${getTime()}</div>`;
+      msgs.appendChild(msg);
+      scrollDown();
+      setQuickReplies([
+        { label: '🚚 Track Order', action: () => setTimeout(() => scenarios.status(), 300) },
+        { label: '🏠 Main Menu', action: () => setTimeout(() => scenarios.welcome(), 300) }
+      ]);
+    }, 700);
+  }
+
+  // ─── SEND USER MSG ───────────────────────────────────────────────────────────
+
+  function sendUserMsg() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    addUserMsg(text);
+    qrDiv.innerHTML = '';
+
+    // Simple command routing
+    const t = text.toLowerCase();
+    setTimeout(() => {
+      if (t.includes('menu') || t.includes('/menu')) scenarios.menu();
+      else if (t.includes('order') || t.includes('/order')) scenarios.order();
+      else if (t.includes('start') || t.includes('/start') || t.includes('hi') || t.includes('hello')) scenarios.welcome();
+      else if (t.includes('pickup') || t.includes('/pickup')) pickupInfo();
+      else if (t.includes('contact') || t.includes('/contact')) contactUs();
+      else if (t.includes('status') || t.includes('track')) scenarios.status();
+      else addBotMsg(`I didn't quite get that. Try:<br>/menu · /order · /pickup · /contact`);
+    }, 300);
+  }
+
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') sendUserMsg(); });
+
+  // ─── SCENARIO LOADER ─────────────────────────────────────────────────────────
+
+  function loadScenario(name, btn) {
+    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    clearMessages();
+    setTimeout(() => scenarios[name](), 200);
+  }
+
+  // ─── INIT ────────────────────────────────────────────────────────────────────
+  setTimeout(() => scenarios.welcome(), 400);
+</script>
+</body>
+</html>
